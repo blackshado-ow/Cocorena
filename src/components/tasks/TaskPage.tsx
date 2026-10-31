@@ -18,6 +18,7 @@ import { guestStore, useSettings, useTasks } from "@/lib/store";
 import { mirrorDeleteTask, mirrorUpsertTask } from "@/lib/supabase/sync";
 import { uid } from "@/lib/storage";
 import { useMounted } from "@/hooks/use-mounted";
+import { todayKey } from "@/lib/dates";
 import { formatKeyShort } from "@/lib/dates";
 import {
   filterTasks,
@@ -33,14 +34,14 @@ import type { Priority, Task } from "@/lib/types";
 const priorityIcon = { high: ArrowUpNarrowWide, medium: ArrowDownWideNarrow, low: ArrowDownWideNarrow } as const;
 const priorityTone = { high: "terracotta", medium: "brown", low: "neutral" } as const;
 
-function TaskRow({ task, onEdit, onDelete, tz }: {
+function TaskRow({ task, onEdit, onDelete, today }: {
   task: Task;
   onEdit: () => void;
   onDelete: () => void;
-  tz?: string | null;
+  today: string;
 }) {
   const Icon = priorityIcon[task.priority];
-  const overdue = isOverdue(task, tz);
+  const overdue = isOverdue(task, today);
   function toggleComplete() {
     const updated: Task = task.completed
       ? { ...task, completed: false, completedAt: undefined }
@@ -110,7 +111,8 @@ export function TaskPage() {
   const [editTask, setEditTask] = useState<Task | null>(null);
   const [deleteTask, setDeleteTask] = useState<Task | null>(null);
 
-  const visible = useMemo(() => sortTasks(filterTasks(tasks, filter), sort), [tasks, filter, sort]);
+  const today = mounted ? todayKey(settings.timezone) : "";
+  const visible = useMemo(() => sortTasks(filterTasks(tasks, filter, today), sort), [tasks, filter, sort, today]);
   const completedCount = tasks.filter((t) => t.completed).length;
 
   function addTask(e: React.FormEvent) {
@@ -222,8 +224,8 @@ export function TaskPage() {
               }`}
             >
               {f}
-              {f === "overdue" && mounted && filterTasks(tasks, f, settings.timezone).length > 0
-                ? ` (${filterTasks(tasks, f, settings.timezone).length})`
+              {f === "overdue" && mounted && filterTasks(tasks, f, today).length > 0
+                ? ` (${filterTasks(tasks, f, today).length})`
                 : null}
             </button>
           ))}
@@ -240,7 +242,7 @@ export function TaskPage() {
             ) : (
               <ul className="flex flex-col gap-2">
                 {visible.map((t) => (
-                  <TaskRow key={t.id} task={t} tz={settings.timezone} onEdit={() => setEditTask(t)} onDelete={() => setDeleteTask(t)} />
+                  <TaskRow key={t.id} task={t} today={today} onEdit={() => setEditTask(t)} onDelete={() => setDeleteTask(t)} />
                 ))}
               </ul>
             )

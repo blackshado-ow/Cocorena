@@ -22,7 +22,10 @@ export function StopwatchTimer() {
   const active = snap.status !== "idle";
   const running = snap.status === "running";
   const now = useNow(active, 250);
-  const elapsed = engine.elapsedActiveMs(snap, running ? now : Date.now());
+  /* elapsedActiveMs only needs the live clock while running — for paused,
+   * finished, or idle snapshots it returns the stored activeMs as-is. Passing
+   * a clock read only in the running branch keeps prerendering device-free. */
+  const elapsed = engine.elapsedActiveMs(snap, running ? now : 0);
 
   /* Live document title while timing (timestamp-based display). */
   useEffect(() => {

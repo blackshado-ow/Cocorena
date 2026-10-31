@@ -95,8 +95,8 @@ export function CountdownTimer() {
     guestStore.setTimer("countdown", engine.IDLE);
   }
 
-  const remaining = Math.max(0, (snap.targetMs ?? 0) - engine.elapsedActiveMs(snap, running ? now : Date.now()));
-  const fraction = snap.targetMs ? engine.elapsedActiveMs(snap, running ? now : Date.now()) / snap.targetMs : 0;
+  const remaining = Math.max(0, (snap.targetMs ?? 0) - engine.elapsedActiveMs(snap, running ? now : 0));
+  const fraction = snap.targetMs ? engine.elapsedActiveMs(snap, running ? now : 0) / snap.targetMs : 0;
   const finished = snap.status === "finished";
 
   return (

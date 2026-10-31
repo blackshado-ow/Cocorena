@@ -12,6 +12,7 @@ import { TIPS } from "@/lib/content/tips";
 import { guestStore } from "@/lib/store";
 import { mirrorUpsertTask } from "@/lib/supabase/sync";
 import { useCloudUser } from "@/lib/supabase/auth-state";
+import { useMounted } from "@/hooks/use-mounted";
 
 const MOTIVATIONS = [
   "Small ticks, tall trees: every session you finish is one planted.",
@@ -27,31 +28,35 @@ export function Dashboard() {
   const timers = useTimerSnapshots();
   const localGroup = useLocalGroup();
   const { configured, user } = useCloudUser();
+  /* “Today” is a device value, so it is resolved only after hydration — the
+   * prerendered shell renders the neutral states and the live values swap in
+   * on mount without layout-boundary streaming. */
+  const mounted = useMounted();
   const tz = settings.timezone;
-  const today = todayKey(tz);
+  const today = mounted ? todayKey(tz) : "";
 
   const dayTotals = dayTotalsFromSessions(sessions, tz);
-  const stats = computeStreaks(dayTotals, settings.dailyGoalMinutes, tz);
+  const stats = computeStreaks(dayTotals, settings.dailyGoalMinutes, today);
   const threshold = goalThresholdMs(settings.dailyGoalMinutes);
   const todayMs = dayTotals.get(today) ?? 0;
-  const todaySessions = sessions.filter(
-    (s) => s.status === "completed" && s.kind !== "pomodoro_break" && new Date(s.endedAt ?? s.startedAt).getTime() !== 0,
-  ).filter((s) => {
-    /* count today's completed focus sessions */
-    const key = dayKey(s.endedAt ?? s.startedAt, tz);
-    return key === today;
-  }).length;
+  const todaySessions =
+    sessions
+      .filter((s) => s.status === "completed" && s.kind !== "pomodoro_break" && new Date(s.endedAt ?? s.startedAt).getTime() !== 0)
+      .filter((s) => {
+        /* count today's completed focus sessions */
+        return dayKey(s.endedAt ?? s.startedAt, tz) === today;
+      }).length;
   const remainingTasks = tasks.filter((t) => !t.completed).length;
   const doneTasks = tasks.length - remainingTasks;
   const priority = topPriorityTasks(tasks);
 
-  const hour = new Date().getHours();
+  const hour = mounted ? new Date().getHours() : 12;
   const greeting = hour < 5 ? "Studying late?" : hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   const motivation = MOTIVATIONS[dayNumberHash(today) % MOTIVATIONS.length];
   const tip = TIPS[dayNumberHash(today) % TIPS.length];
 
-  const last7 = Array.from({ length: 7 }, (_, i) => addDaysKey(today, i - 6));
-  const week = dayInfos(last7, dayTotals, settings.dailyGoalMinutes, tz);
+  const last7 = Array.from({ length: 7 }, (_, i) => addDaysKey(today || "1970-01-01", i - 6));
+  const week = dayInfos(last7, dayTotals, settings.dailyGoalMinutes, today);
   const growing =
     (timers.pomodoro.status === "running" && timers.pomodoro.mode === "focus") ||
     timers.stopwatch.status === "running";
@@ -61,7 +66,7 @@ export function Dashboard() {
       {/* Hero */}
       <Card className="flex flex-col gap-4 p-6 md:flex-row md:items-center md:justify-between md:p-8">
         <div>
-          <p className="text-sm text-ink-soft">{formatKeyLong(today)}</p>
+          <p className="text-sm text-ink-soft">{mounted ? formatKeyLong(today) : ""}</p>
           <h1 className="mt-1 text-2xl font-semibold text-forest md:text-3xl">
             {greeting}
             {user ? `, ${safeName(user)}` : ""} 🌴
@@ -163,7 +168,7 @@ export function Dashboard() {
                       <Badge tone={t.priority === "high" ? "terracotta" : t.priority === "medium" ? "brown" : "neutral"}>
                         {t.priority}
                       </Badge>
-                      {isOverdue(t, tz) ? <Badge tone="miss">overdue</Badge> : null}
+                      {isOverdue(t, today) ? <Badge tone="miss">overdue</Badge> : null}
                     </li>
                   ))}
                 </ul>

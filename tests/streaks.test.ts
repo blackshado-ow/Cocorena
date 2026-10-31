@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
+﻿import { describe, expect, it } from "vitest";
 import { computeStreaks, dayInfos, dayTotalsFromSessions, goalThresholdMs, streakMessage } from "@/lib/streaks";
 import { addDaysKey, todayKey } from "@/lib/dates";
 import type { FocusSession } from "@/lib/types";
 
 const TZ = "UTC";
-const TODAY = todayKey("UTC");
+const TODAY = todayKey(TZ);
 
 function day(n: number): string {
   return addDaysKey(TODAY, -n);
@@ -49,7 +49,7 @@ describe("streaks", () => {
   const goal = 25; // minutes
 
   it("a fresh user has no streak and a pending today", () => {
-    const stats = computeStreaks(new Map(), goal, TZ);
+    const stats = computeStreaks(new Map(), goal, TODAY);
     expect(stats.currentStreak).toBe(0);
     expect(stats.todayStatus).toBe("pending");
     expect(stats.productiveDays).toBe(0);
@@ -57,7 +57,7 @@ describe("streaks", () => {
 
   it("today qualified counts as streak day 1", () => {
     const totals = dayTotalsFromSessions([session({})], "UTC");
-    const stats = computeStreaks(totals, goal, TZ);
+    const stats = computeStreaks(totals, goal, TODAY);
     expect(stats.todayStatus).toBe("qualified");
     expect(stats.currentStreak).toBe(1);
     expect(stats.productiveDays).toBe(1);
@@ -69,20 +69,20 @@ describe("streaks", () => {
       startedAt: Date.parse(`${addDaysKey(TODAY, -1)}T11:35:00Z`),
     });
     const totals = dayTotalsFromSessions([yesterdaySession], "UTC");
-    expect(computeStreaks(totals, goal, TZ).currentStreak).toBe(1); // pending today doesn't hurt
+    expect(computeStreaks(totals, goal, TODAY).currentStreak).toBe(1); // pending today doesn't hurt
 
     const totals2 = dayTotalsFromSessions([yesterdaySession, session({})], "UTC");
-    expect(computeStreaks(totals2, goal, TZ).currentStreak).toBe(2);
+    expect(computeStreaks(totals2, goal, TODAY).currentStreak).toBe(2);
   });
 
   it("a missed day between breaks the current streak", () => {
     const sessions = [
       session({ id: "h1", endedAt: Date.parse(`${day(2)}T12:00:00Z`), startedAt: Date.parse(`${day(2)}T11:35:00Z`) }),
-      // day(1) missed — nothing recorded
+      // day(1) missed â€” nothing recorded
       session({ endedAt: Date.parse(`${TODAY}T12:00:00Z`), startedAt: Date.parse(`${TODAY}T11:35:00Z`) }),
     ];
     const totals = dayTotalsFromSessions(sessions, "UTC");
-    const stats = computeStreaks(totals, goal, TZ);
+    const stats = computeStreaks(totals, goal, TODAY);
     expect(stats.currentStreak).toBe(1); // only today counts
     expect(stats.longestStreak).toBe(1);
     expect(stats.productiveDays).toBe(2);
@@ -93,7 +93,7 @@ describe("streaks", () => {
       session({ id: "s1", activeMs: 24 * 60_000, endedAt: Date.parse(`${TODAY}T10:00:00Z`), startedAt: Date.parse(`${TODAY}T09:35:00Z`) }),
     ];
     const totals = dayTotalsFromSessions(sessions, "UTC");
-    const stats = computeStreaks(totals, goal, TZ);
+    const stats = computeStreaks(totals, goal, TODAY);
     expect(stats.todayStatus).toBe("pending"); // 24 < 25
     expect(stats.currentStreak).toBe(0);
   });
@@ -104,7 +104,7 @@ describe("streaks", () => {
       session({ id: "m2", endedAt: Date.parse(`${TODAY}T15:20:00Z`), startedAt: Date.parse(`${TODAY}T14:55:00Z`) }),
     ];
     const totals = dayTotalsFromSessions(sessions, "UTC");
-    const stats = computeStreaks(totals, goal, TZ);
+    const stats = computeStreaks(totals, goal, TODAY);
     expect(stats.productiveDays).toBe(1);
     expect(stats.currentStreak).toBe(1);
   });
@@ -116,7 +116,7 @@ describe("streaks", () => {
         session({ id: `s${i}`, endedAt: Date.parse(`${day(i)}T12:00:00Z`), startedAt: Date.parse(`${day(i)}T11:35:00Z`) }),
       );
     }
-    const stats = computeStreaks(dayTotalsFromSessions(sessions, "UTC"), goal, TZ);
+    const stats = computeStreaks(dayTotalsFromSessions(sessions, "UTC"), goal, TODAY);
     expect(stats.longestStreak).toBe(6);
     expect(stats.currentStreak).toBe(6);
   });
@@ -131,14 +131,14 @@ describe("dayInfos for the calendar view", () => {
   it("never marks future days as missed; today is pending until qualified", () => {
     const totals = new Map<string, number>([[day(1), 30 * 60_000]]);
     const keys = [day(2), day(1), TODAY, addDaysKey(TODAY, 1)];
-    const infos = dayInfos(keys, totals, 25, TZ);
+    const infos = dayInfos(keys, totals, 25, TODAY);
     expect(infos.map((i) => i.status)).toEqual(["missed", "qualified", "pending", "future"]);
   });
 });
 
 describe("encouraging copy", () => {
   it("gives a fresh user an inviting message, not shame", () => {
-    const msg = streakMessage(computeStreaks(new Map(), 25, TZ));
+    const msg = streakMessage(computeStreaks(new Map(), 25, TODAY));
     expect(msg.toLowerCase()).not.toContain("missed");
     expect(msg).toContain("starts");
   });

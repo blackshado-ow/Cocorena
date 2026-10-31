@@ -9,7 +9,7 @@
  * - Future days are never rendered as missed.
  * - Streaks are DERIVED from recorded sessions, never incremented blindly.
  */
-import { addDaysKey, dayKey, diffDays, todayKey } from "@/lib/dates";
+import { addDaysKey, dayKey, diffDays } from "@/lib/dates";
 import type { FocusSession } from "@/lib/types";
 
 export type DayStatus = "qualified" | "missed" | "pending" | "future";
@@ -48,10 +48,11 @@ export interface StreakStats {
 export function computeStreaks(
   dayTotals: Map<string, number>,
   dailyGoalMinutes: number,
-  tz?: string | null,
+  today: string,
 ): StreakStats {
+  const zero = { currentStreak: 0, longestStreak: 0, productiveDays: 0, todayStatus: "pending" as const, todayActiveMs: 0 };
+  if (!today) return zero; // "today" not resolved yet (pre-hydration) — nothing to derive from
   const threshold = goalThresholdMs(dailyGoalMinutes);
-  const today = todayKey(tz);
   const qualifies = (key: string) => (dayTotals.get(key) ?? 0) >= threshold;
   const todayActiveMs = dayTotals.get(today) ?? 0;
   const todayQualified = todayActiveMs >= threshold;
@@ -115,14 +116,13 @@ export function dayInfos(
   keys: string[],
   dayTotals: Map<string, number>,
   dailyGoalMinutes: number,
-  tz?: string | null,
+  today: string,
 ): DayInfo[] {
   const threshold = goalThresholdMs(dailyGoalMinutes);
-  const today = todayKey(tz);
   return keys.map((key) => {
     const activeMs = dayTotals.get(key) ?? 0;
     // diffDays(a, b) = b - a, so positive = key is in the PAST.
-    const relativeDays = diffDays(key, today); // positive = past, 0 = today, negative = future
+    const relativeDays = today ? diffDays(key, today) : -1; // unresolved "today" → treat as not-yet-real data
     let status: DayStatus;
     if (relativeDays > 0) {
       status = activeMs >= threshold ? "qualified" : "missed";

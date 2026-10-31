@@ -7,6 +7,7 @@ import { CoconutDot, PalmTree } from "@/components/palm/PalmArt";
 import { useSessions, useSettings, useTimerSnapshots } from "@/lib/store";
 import { computeStreaks, dayInfos, dayTotalsFromSessions, goalThresholdMs, streakMessage } from "@/lib/streaks";
 import { formatKeyLong, monthMatrix, todayKey } from "@/lib/dates";
+import { useMounted } from "@/hooks/use-mounted";
 
 export function GardenView() {
   const sessions = useSessions();
@@ -14,10 +15,14 @@ export function GardenView() {
   const timers = useTimerSnapshots();
   const [monthOffset, setMonthOffset] = useState(0);
 
+  /* “Today” is a device value, resolved only after hydration. The prerendered
+   * shell can't rely on it, so the calendar mounts with a neutral placeholder. */
+  const mounted = useMounted();
   const tz = settings.timezone;
-  const today = todayKey(tz);
-  const base = new Date(`${today}T00:00:00Z`);
+  const today = mounted ? todayKey(tz) : "";
+  const resolvedToday = today || "1970-01-01";
   /* Correct month arithmetic regardless of month length. */
+  const base = new Date(`${resolvedToday}T00:00:00Z`);
   const displayed = new Date(Date.UTC(base.getUTCFullYear(), base.getUTCMonth() + monthOffset, 1));
   const year = displayed.getUTCFullYear();
   const month0 = displayed.getUTCMonth();
@@ -26,11 +31,11 @@ export function GardenView() {
     month: "long",
     timeZone: "UTC",
   }).format(displayed);
-  const isCurrentMonth = monthOffset === 0;
+  const isCurrentMonth = mounted && monthOffset === 0;
 
   const dayTotals = useMemo(() => dayTotalsFromSessions(sessions, tz), [sessions, tz]);
-  const stats = useMemo(() => computeStreaks(dayTotals, settings.dailyGoalMinutes, tz), [dayTotals, settings.dailyGoalMinutes, tz]);
-  const infos = useMemo(() => dayInfos(monthMatrix(year, month0).map((c) => c.key), dayTotals, settings.dailyGoalMinutes, tz), [dayTotals, settings.dailyGoalMinutes, tz, year, month0]);
+  const stats = useMemo(() => computeStreaks(dayTotals, settings.dailyGoalMinutes, today), [dayTotals, settings.dailyGoalMinutes, today]);
+  const infos = useMemo(() => dayInfos(monthMatrix(year, month0).map((c) => c.key), dayTotals, settings.dailyGoalMinutes, today), [dayTotals, settings.dailyGoalMinutes, today, year, month0]);
   const cells = monthMatrix(year, month0);
 
   const threshold = goalThresholdMs(settings.dailyGoalMinutes);
@@ -70,74 +75,83 @@ export function GardenView() {
         </div>
       </div>
 
-      <Card>
-        <CardHeader
-          title="Daily history"
-          subtitle="Green = goal reached · red outline cross = missed · dashed = still open"
-          action={
-            <div className="flex items-center gap-1">
-              <Button onClick={() => setMonthOffset((m) => m - 1)} ariaLabel="Previous month">
-                <ChevronLeft size={16} aria-hidden />
-              </Button>
-              <span className="min-w-32 text-center text-sm font-medium text-forest">{monthLabel}</span>
-              <Button disabled={isCurrentMonth} onClick={() => setMonthOffset((m) => m + 1)} ariaLabel="Next month">
-                <ChevronRight size={16} aria-hidden />
-              </Button>
-            </div>
-          }
-        />
-        <div className="p-5">
-          <div className="grid grid-cols-7 gap-1.5">
-            {dayHeaders.map((d) => (
-              <div key={d} className="pb-1 text-center text-xs font-medium text-ink-soft">
-                {d}
+      {mounted ? (
+        <Card>
+          <CardHeader
+            title="Daily history"
+            subtitle="Green = goal reached · red outline cross = missed · dashed = still open"
+            action={
+              <div className="flex items-center gap-1">
+                <Button onClick={() => setMonthOffset((m) => m - 1)} ariaLabel="Previous month">
+                  <ChevronLeft size={16} aria-hidden />
+                </Button>
+                <span className="min-w-32 text-center text-sm font-medium text-forest">{monthLabel}</span>
+                <Button disabled={isCurrentMonth} onClick={() => setMonthOffset((m) => m + 1)} ariaLabel="Next month">
+                  <ChevronRight size={16} aria-hidden />
+                </Button>
               </div>
-            ))}
-            {cells.map((cell, i) => {
-              const info = infos[i];
-              if (!info) return null;
-              const isToday = cell.key === today;
-              return (
-                <div
-                  key={cell.key}
-                  title={`${formatKeyLong(cell.key)} — ${
-                    info.status === "qualified"
-                      ? `${Math.round(info.activeMs / 60_000)} min focused`
-                      : info.status === "pending"
-                        ? "in progress today"
-                        : info.status === "missed"
-                          ? "goal missed"
-                          : "no data yet"
-                  }`}
-                  className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-colors ${
-                    isToday ? "bg-brown-wash ring-1 ring-brown" : cell.inMonth ? "hover:bg-cream" : "opacity-40"
-                  }`}
-                >
-                  <CoconutDot status={info.status} size={22} />
-                  <span className={`text-[10px] ${isToday ? "font-semibold text-brown-deep" : "text-ink-soft"}`}>
-                    {parseInt(cell.key.slice(-2), 10)}
-                  </span>
+            }
+          />
+          <div className="p-5">
+            <div className="grid grid-cols-7 gap-1.5">
+              {dayHeaders.map((d) => (
+                <div key={d} className="pb-1 text-center text-xs font-medium text-ink-soft">
+                  {d}
                 </div>
-              );
-            })}
-          </div>
+              ))}
+              {cells.map((cell, i) => {
+                const info = infos[i];
+                if (!info) return null;
+                const isToday = cell.key === today;
+                return (
+                  <div
+                    key={cell.key}
+                    title={`${formatKeyLong(cell.key)} — ${
+                      info.status === "qualified"
+                        ? `${Math.round(info.activeMs / 60_000)} min focused`
+                        : info.status === "pending"
+                          ? "in progress today"
+                          : info.status === "missed"
+                            ? "goal missed"
+                            : "no data yet"
+                    }`}
+                    className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-colors ${
+                      isToday ? "bg-brown-wash ring-1 ring-brown" : cell.inMonth ? "hover:bg-cream" : "opacity-40"
+                    }`}
+                  >
+                    <CoconutDot status={info.status} size={22} />
+                    <span className={`text-[10px] ${isToday ? "font-semibold text-brown-deep" : "text-ink-soft"}`}>
+                      {parseInt(cell.key.slice(-2), 10)}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
 
-          <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-3 text-xs text-ink-soft">
-            <span className="inline-flex items-center gap-1.5">
-              <CoconutDot status="qualified" size={14} /> qualified day
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CoconutDot status="missed" size={14} /> missed day
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CoconutDot status="pending" size={14} /> today (pending)
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <CoconutDot status="future" size={14} /> future
-            </span>
+            <div className="mt-4 flex flex-wrap items-center gap-4 border-t border-line pt-3 text-xs text-ink-soft">
+              <span className="inline-flex items-center gap-1.5">
+                <CoconutDot status="qualified" size={14} /> qualified day
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <CoconutDot status="missed" size={14} /> missed day
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <CoconutDot status="pending" size={14} /> today (pending)
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <CoconutDot status="future" size={14} /> future
+              </span>
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader title="Daily history" subtitle="Green = goal reached · red outline cross = missed · dashed = still open" />
+          <div className="p-5">
+            <div className="h-56 animate-pulse rounded-2xl bg-brown-wash" aria-label="Loading your month" />
+          </div>
+        </Card>
+      )}
 
       <Card className="p-5">
         <div className="flex items-start gap-3">

@@ -117,7 +117,7 @@ export function PomodoroTimer() {
           </Badge>
           {running || snap.status === "paused" ? (
             <Badge tone="neutral" className="tnum">
-              {running ? "Running" : "Paused"} · {formatHoursMinutes(engine.elapsedActiveMs(snap, running ? now : Date.now()))} active
+              {running ? "Running" : "Paused"} · {formatHoursMinutes(engine.elapsedActiveMs(snap, running ? now : 0))} active
             </Badge>
           ) : null}
         </div>

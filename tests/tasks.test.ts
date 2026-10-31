@@ -29,10 +29,11 @@ describe("task utils", () => {
   });
 
   it("overdue detection uses due date vs local today", () => {
-    expect(isOverdue(task({ dueDate: addDaysKey(today, -1) }), "UTC")).toBe(true);
-    expect(isOverdue(task({ dueDate: today }), "UTC")).toBe(false);
-    expect(isOverdue(task({ dueDate: addDaysKey(today, -1), completed: true }), "UTC")).toBe(false);
-    expect(isOverdue(task({}), "UTC")).toBe(false);
+    expect(isOverdue(task({ dueDate: addDaysKey(today, -1) }), today)).toBe(true);
+    expect(isOverdue(task({ dueDate: today }), today)).toBe(false);
+    expect(isOverdue(task({ dueDate: addDaysKey(today, -1), completed: true }), today)).toBe(false);
+    expect(isOverdue(task({}), today)).toBe(false);
+    expect(isOverdue(task({ dueDate: addDaysKey(today, -1) }), "")).toBe(false); // unresolved "today" never reports overdue
   });
 
   it("filters active / completed / overdue / all", () => {
@@ -42,10 +43,10 @@ describe("task utils", () => {
       task({ id: "c", dueDate: addDaysKey(today, -3) }),
       task({ id: "d", completed: true, dueDate: addDaysKey(today, -3) }),
     ];
-    expect(filterTasks(list, "active", "UTC").map((t) => t.id)).toEqual(["a", "c"]);
-    expect(filterTasks(list, "completed", "UTC").map((t) => t.id)).toEqual(["b", "d"]);
-    expect(filterTasks(list, "overdue", "UTC").map((t) => t.id)).toEqual(["c"]);
-    expect(filterTasks(list, "all", "UTC")).toHaveLength(4);
+    expect(filterTasks(list, "active", today).map((t) => t.id)).toEqual(["a", "c"]);
+    expect(filterTasks(list, "completed", today).map((t) => t.id)).toEqual(["b", "d"]);
+    expect(filterTasks(list, "overdue", today).map((t) => t.id)).toEqual(["c"]);
+    expect(filterTasks(list, "all", today)).toHaveLength(4);
   });
 
   it("topPriorityTasks returns active, high-first, limited", () => {

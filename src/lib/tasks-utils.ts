@@ -2,7 +2,6 @@
  * Task list logic. Pure functions so the UI stays thin and tests stay easy.
  */
 import type { Priority, Task } from "@/lib/types";
-import { todayKey } from "@/lib/dates";
 
 export const PRIORITY_ORDER: Record<Priority, number> = { high: 0, medium: 1, low: 2 };
 
@@ -12,8 +11,9 @@ export const PRIORITY_LABEL: Record<Priority, string> = {
   low: "Low",
 };
 
-export function isOverdue(task: Task, tz?: string | null): boolean {
-  return !task.completed && !!task.dueDate && task.dueDate < todayKey(tz);
+export function isOverdue(task: Task, today: string): boolean {
+  // An unresolved "today" (pre-hydration) never reports false positives.
+  return !task.completed && !!task.dueDate && !!today && task.dueDate < today;
 }
 
 export type TaskFilter = "all" | "active" | "completed" | "overdue";
@@ -21,7 +21,7 @@ export type TaskFilter = "all" | "active" | "completed" | "overdue";
 export function filterTasks(
   tasks: Task[],
   filter: TaskFilter,
-  tz?: string | null,
+  today = "",
 ): Task[] {
   switch (filter) {
     case "active":
@@ -29,7 +29,7 @@ export function filterTasks(
     case "completed":
       return tasks.filter((t) => t.completed);
     case "overdue":
-      return tasks.filter((t) => isOverdue(t, tz));
+      return tasks.filter((t) => isOverdue(t, today));
     default:
       return tasks;
   }
