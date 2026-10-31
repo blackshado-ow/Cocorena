@@ -120,7 +120,13 @@ export function GroupsPage() {
         title="Study groups"
         eyebrow="Together"
         subtitle={`Study together, gently. Groups cap at ${MAX_GROUP_MEMBERS} members so everyone stays visible.`}
-      />
+      >
+        <p className="text-sm">
+          <Link href="/friends" className="font-medium text-palm-deep hover:underline">
+            Find study partners on the Friends page →
+          </Link>
+        </p>
+      </PageHeading>
 
       <ClientOnly fallback={<Spinner label="Checking groups" />}>
         {loading && configured ? (

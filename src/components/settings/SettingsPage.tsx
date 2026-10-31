@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CheckCircle2, CloudOff, Database, HeartHandshake, Info } from "lucide-react";
+import { CheckCircle2, CloudOff, Database, HeartHandshake, Info, UserRound } from "lucide-react";
+import Link from "next/link";
 import { Badge, Button, Card, CardHeader, Dialog, Field, Spinner, TextInput, Toggle } from "@/components/ui/primitives";
 import { DEFAULT_SETTINGS, guestStore, useFavorites, useSettings } from "@/lib/store";
 import { clearAllCocorenaData } from "@/lib/storage";
@@ -201,6 +202,11 @@ export function SettingsPage() {
                 >
                   Sign out
                 </Button>
+                <Link href="/profile" className="inline-flex">
+                  <Button variant="ghost">
+                    <UserRound size={15} aria-hidden /> Public profile →
+                  </Button>
+                </Link>
               </div>
               {importState ? <p className="text-sm text-ink-soft" role="status">{importState}</p> : null}
             </>

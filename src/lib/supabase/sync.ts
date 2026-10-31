@@ -70,9 +70,10 @@ export async function importGuestDataToCloud(user: User): Promise<ImportResult> 
     }
 
     const settings = guestStore.getSettings();
+    // No email here on purpose: auth.users owns the address; profiles holds
+    // only public-facing data (see supabase/migrations/0002_accounts_friends_groups.sql).
     await supabase.from("profiles").upsert({
       id: user.id,
-      email: user.email ?? "",
       display_name: (user.user_metadata?.full_name as string | undefined) ?? null,
       timezone: settings.timezone,
       settings: settings as unknown as Record<string, unknown>,

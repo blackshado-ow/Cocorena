@@ -3,56 +3,39 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, KeyRound, Plus, Users } from "lucide-react";
-import { Button, Card, CardHeader, EmptyState, Field, Spinner, TextInput } from "@/components/ui/primitives";
-import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { Badge, Button, Card, CardHeader, EmptyState, Field, Spinner, TextInput } from "@/components/ui/primitives";
+import {
+  createCloudGroup,
+  joinByInvitationCode,
+  loadMyGroups,
+  type MyGroupSummary,
+} from "@/lib/supabase/groups";
 import { MAX_GROUP_MEMBERS } from "@/components/groups/GroupsPage";
 
-export interface CloudGroupSummary {
-  id: string;
-  name: string;
-  join_code: string;
-  owner_id: string;
-  member_count: number;
-  role: string;
-}
-
-export function CloudGroups({ userId }: { userId: string }) {
-  const [groups, setGroups] = useState<CloudGroupSummary[] | null>(null);
+export function CloudGroups(
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _props: { userId: string },
+) {
+  const [groups, setGroups] = useState<MyGroupSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
+  const [description, setDescription] = useState("");
   const [code, setCode] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [busyCreate, setBusyCreate] = useState(false);
+  const [busyJoin, setBusyJoin] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  const supabase = getSupabaseBrowserClient();
-
   const load = useCallback(async () => {
-    if (!supabase) return;
-    setError(null);
-    const { data: memberships, error: mErr } = await supabase
-      .from("group_members")
-      .select("role, groups ( id, name, join_code, owner_id )")
-      .eq("user_id", userId);
-    if (mErr) {
-      setError(mErr.message);
+    setGroups(null);
+    const res = await loadMyGroups();
+    if (res.ok) {
+      setGroups(res.value);
+      setError(null);
+    } else {
+      setError(res.error);
       setGroups([]);
-      return;
     }
-    const mapped: CloudGroupSummary[] = [];
-    for (const m of (memberships ?? []) as unknown as { role: string; groups: { id: string; name: string; join_code: string; owner_id: string } | null }[]) {
-      if (!m.groups) continue;
-      const { count } = await supabase.from("group_members").select("user_id", { count: "exact", head: true }).eq("group_id", m.groups.id);
-      mapped.push({
-        id: m.groups.id,
-        name: m.groups.name,
-        join_code: m.groups.join_code,
-        owner_id: m.groups.owner_id,
-        role: m.role,
-        member_count: count ?? 1,
-      });
-    }
-    setGroups(mapped);
-  }, [supabase, userId]);
+  }, []);
 
   useEffect(() => {
     void load();
@@ -60,68 +43,43 @@ export function CloudGroups({ userId }: { userId: string }) {
 
   async function createGroup(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase) return;
-    const trimmed = name.trim();
-    if (trimmed.length === 0 || trimmed.length > 60) {
-      setError("Group name must be 1–60 characters.");
-      return;
-    }
-    setBusy(true);
+    if (busyCreate) return;
+    setBusyCreate(true);
     setError(null);
-    const { data, error: gErr } = await supabase
-      .from("groups")
-      .insert({ name: trimmed, owner_id: userId })
-      .select("id")
-      .single();
-    if (gErr) {
-      setError(gErr.message === "new row violates row-level security policy" ? "You can create a group you own once signed in." : gErr.message);
-      setBusy(false);
+    const res = await createCloudGroup({ name, description: description || null });
+    setBusyCreate(false);
+    if (!res.ok) {
+      setError(res.error);
       return;
     }
-    const { error: memErr } = await supabase.from("group_members").insert({ group_id: data.id, user_id: userId, role: "owner" });
-    if (memErr) setError(memErr.message);
     setName("");
+    setDescription("");
+    setNotice("Group created. Your join code is on the group card — open the room to manage invitations.");
     await load();
-    setNotice("Group created.");
-    setBusy(false);
   }
 
   async function joinByCode(e: React.FormEvent) {
     e.preventDefault();
-    if (!supabase) return;
-    const trimmed = code.trim().toUpperCase();
-    if (trimmed.length < 4) {
-      setError("Enter the full join code.");
-      return;
-    }
-    setBusy(true);
+    if (busyJoin) return;
+    setBusyJoin(true);
     setError(null);
-    const { data: groupId, error: rpcErr } = await supabase.rpc("join_group_by_code", { p_code: trimmed });
-    if (rpcErr) {
-      const msg = rpcErr.message;
-      setError(
-        msg.includes("Invalid join code")
-          ? "That code doesn't match any group."
-          : msg.includes("12 member limit")
-            ? "That group is full (12/12)."
-            : msg,
-      );
-      setBusy(false);
+    const res = await joinByInvitationCode(code);
+    setBusyJoin(false);
+    if (!res.ok) {
+      setError(res.error);
       return;
     }
     setCode("");
-    await load();
     setNotice("Joined the group.");
-    setBusy(false);
-    void groupId;
+    await load();
   }
 
-  if (groups === null) return <Spinner label="Loading your groups" />;
+  if (groups === null && !error) return <Spinner label="Loading your groups" />;
 
   return (
     <div className="flex flex-col gap-6">
       {notice ? (
-        <p role="status" className="rounded-md bg-palm-wash px-4 py-2.5 text-sm font-medium text-forest">
+        <p role="status" className="rounded-md bg-palm-wash px-4 py-2.5 text-sm font-medium text-palm-deep">
           <Check size={14} className="mr-1 inline" aria-hidden /> {notice}
         </p>
       ) : null}
@@ -133,19 +91,32 @@ export function CloudGroups({ userId }: { userId: string }) {
             <Field label="Group name" htmlFor="cloud-group-name">
               <TextInput id="cloud-group-name" value={name} maxLength={60} placeholder="e.g. Physics mornings" onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Button type="submit" loading={busy} className="w-fit">
+            <Field label="Description (optional)" htmlFor="cloud-group-description" hint="A line about how this group studies — shown to invited members.">
+              <TextInput id="cloud-group-description" value={description} maxLength={280} placeholder="e.g. 7:00 weekdays, deep work" onChange={(e) => setDescription(e.target.value)} />
+            </Field>
+            <Button type="submit" loading={busyCreate} className="w-fit">
               <Plus size={16} aria-hidden /> Create group
             </Button>
           </form>
         </Card>
 
         <Card>
-          <CardHeader title="Join with a code" subtitle="Ask a friend for their 8-character code" />
+          <CardHeader title="Join with a code" subtitle="From an invitation link or a friend's message" />
           <form className="flex flex-col gap-4 p-5" onSubmit={joinByCode}>
-            <Field label="Join code" htmlFor="cloud-join-code">
-              <TextInput id="cloud-join-code" value={code} maxLength={8} className="uppercase font-mono tracking-widest" placeholder="A1B2C3D4" onChange={(e) => setCode(e.target.value)} />
+            <Field label="Invitation code" htmlFor="cloud-join-code">
+              <TextInput
+                id="cloud-join-code"
+                value={code}
+                maxLength={8}
+                className="uppercase font-mono tracking-widest"
+                placeholder="A1B2C3D4"
+                autoCapitalize="characters"
+                autoCorrect="off"
+                spellCheck={false}
+                onChange={(e) => setCode(e.target.value.toUpperCase())}
+              />
             </Field>
-            <Button type="submit" loading={busy} variant="secondary" className="w-fit">
+            <Button type="submit" loading={busyJoin} variant="secondary" className="w-fit">
               <KeyRound size={16} aria-hidden /> Join group
             </Button>
           </form>
@@ -161,16 +132,20 @@ export function CloudGroups({ userId }: { userId: string }) {
       <Card>
         <CardHeader title="Your groups" subtitle="Open a room to study together" />
         <div className="p-4">
-          {groups.length === 0 ? (
+          {groups?.length === 0 ? (
             <EmptyState icon={<Users size={24} />} title="No groups yet" hint="Create one above, or join a friend's group with their code." />
           ) : (
             <ul className="flex flex-col gap-2">
-              {groups.map((g) => (
-                <li key={g.id} className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface px-4 py-3">
+              {groups?.map((g) => (
+                <li key={g.id} className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-line/80 bg-surface px-4 py-3">
                   <div className="min-w-0">
-                    <p className="truncate font-medium text-forest">{g.name}</p>
+                    <p className="flex items-center gap-2 truncate font-medium text-forest">
+                      {g.name}
+                      {g.role === "owner" ? <Badge tone="palm">owner</Badge> : null}
+                    </p>
+                    {g.description ? <p className="truncate text-xs text-ink-soft">{g.description}</p> : null}
                     <p className="text-xs text-ink-soft">
-                      {g.member_count}/{MAX_GROUP_MEMBERS} members · {g.role === "owner" ? "you lead this group" : "member"} · code {g.join_code}
+                      code {g.join_code} · {g.invitations_enabled ? "invitations open" : "invitations paused"}
                     </p>
                   </div>
                   <Link href={`/groups/${g.id}`}>

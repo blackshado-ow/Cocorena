@@ -14,10 +14,14 @@ const NAV = [
   { href: "/countdown", label: "Countdown", group: "Timers" },
   { href: "/tasks", label: "Tasks", group: "Practices" },
   { href: "/garden", label: "Garden", group: "Practices" },
-  { href: "/groups", label: "Groups", group: "Practices" },
+  { href: "/groups", label: "Groups", group: "People" },
+  { href: "/friends", label: "Friends", group: "People" },
   { href: "/focus-corner", label: "Focus Corner", group: "Practices" },
   { href: "/settings", label: "Settings", group: "Overview" },
 ] as const;
+
+/** Desktop tabs: everything except Settings (its "Account" chip lives on the right). */
+const DESKTOP_NAV_COUNT = NAV.length - 1;
 
 function NavLink({ href, label, active, onNavigate }: {
   href: string;
@@ -82,7 +86,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </Link>
 
           <nav aria-label="Primary" className="my-auto hidden h-full items-stretch gap-5 md:my-0 md:flex">
-            {NAV.slice(0, 8).map((item) => (
+            {NAV.slice(0, DESKTOP_NAV_COUNT).map((item) => (
               <NavLink key={item.href} href={item.href} label={item.label} active={pathname === item.href} />
             ))}
           </nav>
