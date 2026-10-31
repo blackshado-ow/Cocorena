@@ -147,13 +147,14 @@ supabase/migrations/    SQL schema with RLS policies
 
 ## Verification status (truthful)
 
-**Verified locally:** TypeScript strict typecheck, ESLint (0 errors), all 37 unit tests, production build (15 routes), and manual browser checks of the guest-mode flows.
+**Verified locally:** TypeScript strict typecheck, ESLint (0 errors, 0 warnings), all 37 unit tests, production build (15 routes, all prerendered as static single-flush HTML), and manual browser checks of the guest-mode flows.
 
 **Not verified (requires credentials the project intentionally doesn't contain):** live Supabase authentication, database writes, realtime group sync, and email confirmation/magic-link delivery. The integration code, SQL migration, and fallback paths are written and reviewed, but they cannot be exercised without a real Supabase project. Follow the setup section above — the code will either work as written or surface a clear error message.
 
 ## Known limitations
 
 - Guest data lives in one browser's `localStorage`: clearing browser data erases it (Settings → "Clear all Cocorena data" is a deliberate, confirmed action). No server backup exists in guest mode.
+- Device values such as today's date and the greeting hour are resolved right after the page loads (never on the server), so the very first paint shows neutral placeholders for a moment and then the live values appear. This is deliberate: Cache Components requires prerendered pages to be free of device-only data, and it keeps every route a fast, complete HTML flush.
 - The local study-group demo can't show other people — that genuinely requires cloud auth; the UI says so rather than faking members.
 - On Windows, PowerShell execution policy may block `npm`/`npx` shims; use `npm.cmd`/`npx.cmd` (documented above).
 - The project lives inside a OneDrive-synced folder; heavy `node_modules` churn can trigger sync traffic. Excluding it from OneDrive sync is reasonable.
