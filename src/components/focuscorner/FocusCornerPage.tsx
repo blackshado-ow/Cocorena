@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { ChevronDown, Search, ShieldCheck, Star } from "lucide-react";
-import { Badge, Button, Card, Field, Segmented, TextInput } from "@/components/ui/primitives";
+import { Button, Card, Field, Segmented, TextInput } from "@/components/ui/primitives";
+import { PageHeading } from "@/components/shell/PageHeading";
 import { guestStore, useFavorites } from "@/lib/store";
 import { TIPS, TIP_CATEGORIES } from "@/lib/content/tips";
 import { useMounted } from "@/hooks/use-mounted";
@@ -33,13 +34,11 @@ export function FocusCornerPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-forest">Focus Corner</h1>
-        <p className="mt-1 max-w-2xl text-sm text-ink-soft">
-          Practical, no-fluff advice: concentrating deeply, studying what sticks, resting with purpose, and building a routine that
-          survives exam weeks. Curated for students — no AI, no tracking.
-        </p>
-      </div>
+      <PageHeading
+        title="Focus Corner"
+        eyebrow="Field notes"
+        subtitle="Practical, no-fluff advice: concentrating deeply, studying what sticks, resting with purpose, and building a routine that survives exam weeks. Curated for students — no AI, no tracking."
+      />
 
       <div className="flex flex-col gap-3">
         <Field label="Search advice" htmlFor="tip-search">
@@ -94,8 +93,8 @@ function TipCard({ tip, favorite }: { tip: (typeof TIPS)[number]; favorite: bool
     <Card className="flex flex-col p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <Badge tone="brown">{tip.category}</Badge>
-          <h2 className="mt-2 text-base font-semibold text-forest">{tip.title}</h2>
+          <p className="eyebrow text-brown">{tip.category}</p>
+          <h2 className="font-display mt-2 text-lg font-medium text-forest">{tip.title}</h2>
         </div>
         <button
           aria-label={favorite ? `Remove ${tip.title} from favorites` : `Save ${tip.title} to favorites`}

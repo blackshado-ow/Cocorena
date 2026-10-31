@@ -8,6 +8,7 @@ import { Badge, Button, Card, Field, Segmented, TextInput } from "@/components/u
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useCloudUser } from "@/lib/supabase/auth-state";
 import { importGuestDataToCloud } from "@/lib/supabase/sync";
+import { PageHeading } from "@/components/shell/PageHeading";
 
 export function AuthPage() {
   const { configured, loading, user } = useCloudUser();
@@ -15,10 +16,11 @@ export function AuthPage() {
   if (!configured) {
     return (
       <div className="flex flex-col gap-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-forest">Sign in</h1>
-          <p className="mt-1 text-sm text-ink-soft">Cloud accounts aren&apos;t set up yet — Cocorena keeps working in guest mode.</p>
-        </div>
+        <PageHeading
+          title="Sign in"
+          eyebrow="Cloud sync"
+          subtitle="Cloud accounts aren&apos;t set up yet — Cocorena keeps working in guest mode."
+        />
         <Card className="p-6">
           <div className="flex items-start gap-3">
             <CloudOff size={18} className="mt-0.5 shrink-0 text-brown" aria-hidden />
@@ -47,10 +49,11 @@ export function AuthPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-forest">Sign in</h1>
-        <p className="mt-1 text-sm text-ink-soft">Guest mode stays available; signing in syncs your streak and groups across devices.</p>
-      </div>
+      <PageHeading
+        title="Sign in"
+        eyebrow="Cloud sync"
+        subtitle="Guest mode stays available; signing in syncs your streak and groups across devices."
+      />
       {loading ? (
         <Card className="p-6 text-sm text-ink-soft">Checking your session…</Card>
       ) : (
@@ -175,12 +178,12 @@ function AuthForms() {
           ) : null}
 
           {error ? (
-            <p role="alert" className="rounded-xl bg-miss-wash px-4 py-2.5 text-sm font-medium text-miss">
+            <p role="alert" className="rounded-md bg-miss-wash px-4 py-2.5 text-sm font-medium text-miss">
               {error}
             </p>
           ) : null}
           {notice ? (
-            <p role="status" className="flex items-start gap-2 rounded-xl bg-palm-wash px-4 py-2.5 text-sm font-medium text-forest">
+            <p role="status" className="flex items-start gap-2 rounded-md bg-palm-wash px-4 py-2.5 text-sm font-medium text-forest">
               <CheckCircle2 size={15} className="mt-0.5 shrink-0" aria-hidden /> {notice}
             </p>
           ) : null}

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Check, Info, LogOut, Users } from "lucide-react";
-import { Badge, Button, Card, CardHeader, ClientOnly, Field, Spinner, TextInput } from "@/components/ui/primitives";
+import { Badge, Button, Card, ClientOnly, CardHeader, Field, Spinner, TextInput } from "@/components/ui/primitives";
+import { PageHeading } from "@/components/shell/PageHeading";
 import { guestStore, useLocalGroup } from "@/lib/store";
 import { uid } from "@/lib/storage";
 import { useCloudUser } from "@/lib/supabase/auth-state";
@@ -64,7 +65,7 @@ function LocalGroupsDemo() {
               <Check size={15} aria-hidden /> Group created. Share the code with friends (once cloud sign-in exists, they can join from anywhere).
             </p>
           ) : null}
-          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-cream px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-md bg-cream px-4 py-3">
             <span className="text-xs font-medium text-ink-soft">Join code</span>
             <span className="tnum font-mono text-lg font-semibold tracking-widest text-forest">{group.joinCode}</span>
             <Badge tone="brown">1 / {MAX_GROUP_MEMBERS} members</Badge>
@@ -115,12 +116,11 @@ export function GroupsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-forest">Study groups</h1>
-        <p className="mt-1 text-sm text-ink-soft">
-          Study together, gently. Groups cap at {MAX_GROUP_MEMBERS} members so everyone stays visible.
-        </p>
-      </div>
+      <PageHeading
+        title="Study groups"
+        eyebrow="Together"
+        subtitle={`Study together, gently. Groups cap at ${MAX_GROUP_MEMBERS} members so everyone stays visible.`}
+      />
 
       <ClientOnly fallback={<Spinner label="Checking groups" />}>
         {loading && configured ? (

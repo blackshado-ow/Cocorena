@@ -111,7 +111,7 @@ export function CloudGroups({ userId }: { userId: string }) {
     }
     setCode("");
     await load();
-    setNotice("Joined the group 🎉");
+    setNotice("Joined the group.");
     setBusy(false);
     void groupId;
   }
@@ -121,7 +121,7 @@ export function CloudGroups({ userId }: { userId: string }) {
   return (
     <div className="flex flex-col gap-6">
       {notice ? (
-        <p role="status" className="rounded-xl bg-palm-wash px-4 py-2.5 text-sm font-medium text-forest">
+        <p role="status" className="rounded-md bg-palm-wash px-4 py-2.5 text-sm font-medium text-forest">
           <Check size={14} className="mr-1 inline" aria-hidden /> {notice}
         </p>
       ) : null}
@@ -153,7 +153,7 @@ export function CloudGroups({ userId }: { userId: string }) {
       </div>
 
       {error ? (
-        <p role="alert" className="rounded-xl bg-miss-wash px-4 py-2.5 text-sm font-medium text-miss">
+        <p role="alert" className="rounded-md bg-miss-wash px-4 py-2.5 text-sm font-medium text-miss">
           {error}
         </p>
       ) : null}
@@ -166,7 +166,7 @@ export function CloudGroups({ userId }: { userId: string }) {
           ) : (
             <ul className="flex flex-col gap-2">
               {groups.map((g) => (
-                <li key={g.id} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+                <li key={g.id} className="flex items-center justify-between gap-3 rounded-md border border-line bg-surface px-4 py-3">
                   <div className="min-w-0">
                     <p className="truncate font-medium text-forest">{g.name}</p>
                     <p className="text-xs text-ink-soft">

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Coffee, Pause, Play, RotateCcw, Square, SkipForward } from "lucide-react";
-import { Badge, Button, Card, ClientOnly, Dialog, Field, Select } from "@/components/ui/primitives";
+import { Button, Card, ClientOnly, Dialog, Field, Select } from "@/components/ui/primitives";
 import { ProgressRing } from "@/components/timers/ProgressRing";
 import { TodayFocusSummary } from "@/components/timers/TodayFocusSummary";
-import { PalmTree } from "@/components/palm/PalmArt";
+import { PalmTree, Sprig } from "@/components/palm/PalmArt";
 import { guestStore, useSettings, useTasks, useTimerSnapshots } from "@/lib/store";
 import * as engine from "@/lib/timers/engine";
 import { ensureNotificationPermission, notifyTimerDone, playChime } from "@/lib/feedback";
@@ -108,31 +108,52 @@ export function PomodoroTimer() {
         ? "idle"
         : "running";
 
+  /* Space toggles start/pause — guarded so typing anywhere never fires it. */
+  const spaceAction = useRef<() => void>(() => {});
+  useEffect(() => {
+    spaceAction.current = () => {
+      if (phase === "idle") startFocus();
+      else if (phase === "running" || snap.status === "paused") pauseResume();
+    };
+  });
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.code !== "Space" || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.tagName === "BUTTON" || t.isContentEditable)) return;
+      e.preventDefault();
+      spaceAction.current();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   return (
     <div className="flex flex-col gap-6">
-      <Card className="p-6 md:p-8">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <Badge tone={isBreak ? "terracotta" : "palm"}>
-            {phase === "break-done" ? "Break finished" : phase === "focus-done" ? "Focus session complete" : isBreak ? "Break" : "Focus"}
-          </Badge>
+      <Card className="relative overflow-hidden p-6 md:p-9">
+        <Sprig className="pointer-events-none absolute -right-2 -top-2 h-28 w-28 rotate-12 opacity-40" />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
+          <p className="eyebrow text-brown">
+            {phase === "break-done" ? "Break complete" : phase === "focus-done" ? "Session complete" : isBreak ? "Break · rest" : "Pomodoro focus"}
+          </p>
           {running || snap.status === "paused" ? (
-            <Badge tone="neutral" className="tnum">
+            <span className="tnum text-xs text-ink-soft">
               {running ? "Running" : "Paused"} · {formatHoursMinutes(engine.elapsedActiveMs(snap, running ? now : 0))} active
-            </Badge>
+            </span>
           ) : null}
         </div>
 
-        <ClientOnly fallback={<div className="mx-auto my-6 h-56 w-56 animate-pulse rounded-full bg-brown-wash" />}>
-          <div className="flex flex-col items-center gap-5">
-            <ProgressRing fraction={fraction} color={isBreak ? "var(--color-terracotta)" : "var(--color-palm)"} size={260}>
-              <span className="tnum text-5xl font-semibold text-forest md:text-6xl">
+        <ClientOnly fallback={<div className="mx-auto my-6 h-64 w-64 animate-pulse rounded-full bg-brown-wash" />}>
+          <div className="flex flex-col items-center gap-6">
+            <ProgressRing fraction={fraction} color={isBreak ? "var(--color-terracotta)" : "var(--color-forest)"} size={280}>
+              <span className="tnum font-display text-6xl font-medium text-forest">
                 {phase === "idle"
                   ? engine.formatCountdown(focusMs)
                   : phase === "focus-done" || phase === "break-done"
                     ? engine.formatCountdown(snap.finishedMs ?? 0)
                     : engine.formatCountdown(remaining)}
               </span>
-              <span className="mt-1 text-sm text-ink-soft">
+              <span className="mt-1.5 text-sm text-ink-soft">
                 {phase === "idle"
                   ? `one ${settings.focusMinutes}-minute focus session`
                   : phase === "running"
@@ -145,51 +166,57 @@ export function PomodoroTimer() {
               </span>
             </ProgressRing>
 
-            {phase !== "idle" && phase !== "focus-done" && phase !== "break-done" ? (
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                {snap.status === "running" ? (
-                  <Button variant="secondary" size="lg" onClick={pauseResume}>
-                    <Pause size={18} aria-hidden /> Pause
+            <div className="flex flex-wrap items-center justify-center gap-2.5">
+              {phase !== "idle" && phase !== "focus-done" && phase !== "break-done" ? (
+                <>
+                  {snap.status === "running" ? (
+                    <Button variant="secondary" size="lg" onClick={pauseResume}>
+                      <Pause size={18} aria-hidden /> Pause
+                    </Button>
+                  ) : snap.status === "paused" ? (
+                    <Button size="lg" onClick={pauseResume}>
+                      <Play size={18} aria-hidden /> Resume
+                    </Button>
+                  ) : null}
+                  {isBreak ? (
+                    <Button variant="ghost" onClick={backToFocus}>
+                      <SkipForward size={16} aria-hidden /> Skip break
+                    </Button>
+                  ) : (
+                    <Button variant="ghost" onClick={() => setEndOpen(true)}>
+                      <Square size={16} aria-hidden /> End session
+                    </Button>
+                  )}
+                </>
+              ) : null}
+
+              {phase === "idle" ? (
+                <Button size="lg" onClick={startFocus}>
+                  <Play size={18} aria-hidden /> Start focus session
+                </Button>
+              ) : null}
+
+              {phase === "focus-done" ? (
+                <>
+                  <Button size="lg" onClick={startBreak}>
+                    <Coffee size={18} aria-hidden /> Start {settings.breakMinutes}-minute break
                   </Button>
-                ) : snap.status === "paused" ? (
-                  <Button size="lg" onClick={pauseResume}>
-                    <Play size={18} aria-hidden /> Resume
-                  </Button>
-                ) : null}
-                {isBreak ? (
                   <Button variant="ghost" onClick={backToFocus}>
-                    <SkipForward size={16} aria-hidden /> Skip break
+                    Skip break
                   </Button>
-                ) : (
-                  <Button variant="ghost" onClick={() => setEndOpen(true)}>
-                    <Square size={16} aria-hidden /> End session
-                  </Button>
-                )}
-              </div>
-            ) : null}
+                </>
+              ) : null}
 
-            {phase === "idle" ? (
-              <Button size="lg" onClick={startFocus}>
-                <Play size={18} aria-hidden /> Start focus session
-              </Button>
-            ) : null}
-
-            {phase === "focus-done" ? (
-              <div className="flex flex-col items-center gap-2">
-                <Button size="lg" onClick={startBreak}>
-                  <Coffee size={18} aria-hidden /> Start {settings.breakMinutes}-minute break
+              {phase === "break-done" ? (
+                <Button size="lg" onClick={backToFocus}>
+                  <RotateCcw size={18} aria-hidden /> Fresh focus session
                 </Button>
-                <Button variant="ghost" onClick={backToFocus}>
-                  Skip break
-                </Button>
-              </div>
-            ) : null}
+              ) : null}
+            </div>
 
-            {phase === "break-done" ? (
-              <Button size="lg" onClick={backToFocus}>
-                <RotateCcw size={18} aria-hidden /> Fresh focus session
-              </Button>
-            ) : null}
+            <p className="text-center text-xs text-ink-soft/80">
+              Space starts or pauses · pauses are never counted
+            </p>
           </div>
         </ClientOnly>
       </Card>
@@ -211,7 +238,7 @@ export function PomodoroTimer() {
               ))}
             </Select>
           </Field>
-          <p className="mt-2 text-xs text-ink-soft">
+          <p className="mt-2 text-xs leading-relaxed text-ink-soft">
             Pauses are excluded from recorded time. Ending early records the session as abandoned — it adds no focus time,
             but nothing is lost: your statistics stay accurate.
           </p>
@@ -221,7 +248,9 @@ export function PomodoroTimer() {
         </div>
       </Card>
 
-      <TodayFocusSummary tz={settings.timezone} />
+      <Card className="px-5 pb-4 pt-3">
+        <TodayFocusSummary tz={settings.timezone} />
+      </Card>
 
       <Dialog open={endOpen} onClose={() => setEndOpen(false)} title="End this session early?">
         <p className="text-sm text-ink-soft">

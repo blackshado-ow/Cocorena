@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { Pause, Play, RotateCcw, Save } from "lucide-react";
-import { Badge, Button, Card, ClientOnly, Dialog, Field, TextInput } from "@/components/ui/primitives";
+import { Button, Card, ClientOnly, Dialog, Field, TextInput } from "@/components/ui/primitives";
 import { ProgressRing } from "@/components/timers/ProgressRing";
 import { TodayFocusSummary } from "@/components/timers/TodayFocusSummary";
+import { Sprig } from "@/components/palm/PalmArt";
 import { guestStore, useSettings, useTimerSnapshots } from "@/lib/store";
 import * as engine from "@/lib/timers/engine";
 import { ensureNotificationPermission, notifyTimerDone, playChime } from "@/lib/feedback";
@@ -101,21 +102,22 @@ export function CountdownTimer() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="p-6 md:p-8">
-        <div className="mb-4 flex items-center justify-between gap-2">
-          <Badge tone={finished ? "brown" : running ? "palm" : snap.status === "paused" ? "brown" : "neutral"}>
-            {finished ? "Time is up" : running ? "Counting down" : snap.status === "paused" ? "Paused" : "Not started"}
-          </Badge>
+      <Card className="relative overflow-hidden p-6 md:p-9">
+        <Sprig className="pointer-events-none absolute -right-2 -top-2 h-28 w-28 rotate-12 opacity-40" />
+        <div className="mb-6 flex items-center justify-between gap-2">
+          <p className="eyebrow text-brown">
+            {finished ? "Time is up" : running ? "Counting down" : snap.status === "paused" ? "Paused" : "Countdown"}
+          </p>
         </div>
 
         <ClientOnly fallback={<div className="mx-auto my-6 h-56 w-56 animate-pulse rounded-full bg-brown-wash" />}>
           {active || finished ? (
-            <div className="flex flex-col items-center gap-5">
-              <ProgressRing fraction={fraction} color="var(--color-brown)" size={260}>
-                <span className="tnum text-5xl font-semibold text-forest md:text-6xl">
+            <div className="flex flex-col items-center gap-6">
+              <ProgressRing fraction={fraction} color="var(--color-brown)" size={280}>
+                <span className="tnum font-display text-6xl font-medium text-forest">
                   {engine.formatCountdown(finished ? 0 : remaining)}
                 </span>
-                <span className="mt-1 text-sm text-ink-soft">
+                <span className="mt-1.5 text-sm text-ink-soft">
                   {finished ? "countdown complete" : running ? "keep going" : "paused"}
                 </span>
               </ProgressRing>
@@ -126,7 +128,7 @@ export function CountdownTimer() {
                 </p>
               ) : null}
 
-              <div className="flex flex-wrap items-center justify-center gap-2">
+              <div className="flex flex-wrap items-center justify-center gap-2.5">
                 {finished ? (
                   <>
                     <Button size="lg" onClick={logAsFocus}>
@@ -207,7 +209,7 @@ export function CountdownTimer() {
               ) : null}
 
               <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs text-ink-soft">Quick picks:</span>
+                <span className="eyebrow text-ink-soft">Quick picks</span>
                 {PRESETS.map((p) => (
                   <Button
                     key={p}

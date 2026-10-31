@@ -9,6 +9,7 @@ import { ensureNotificationPermission } from "@/lib/feedback";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 import { useCloudUser } from "@/lib/supabase/auth-state";
 import { importGuestDataToCloud } from "@/lib/supabase/sync";
+import { PageHeading } from "@/components/shell/PageHeading";
 
 export function SettingsPage() {
   const settings = useSettings();
@@ -79,10 +80,11 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-forest">Settings</h1>
-        <p className="mt-1 text-sm text-ink-soft">Timers, goals, feedback, cloud account, and your guest data.</p>
-      </div>
+      <PageHeading
+        title="Settings"
+        eyebrow="Preferences"
+        subtitle="Timers, goals, feedback, cloud account, and your guest data."
+      />
 
       <Card>
         <CardHeader title="Timers & daily goal" subtitle="Applies everywhere, saved on this device" />

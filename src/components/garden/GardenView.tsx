@@ -47,29 +47,32 @@ export function GardenView() {
   const dayHeaders = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
   return (
-    <div className="flex flex-col gap-6">
-      <Card className="flex flex-col items-center gap-4 p-6 md:flex-row md:items-center md:justify-between md:px-8">
-        <div className="text-center md:text-left">
-          <h2 className="text-xl font-semibold text-forest">Your coconut grove</h2>
-          <p className="mt-1 max-w-md text-sm text-ink-soft">
-            {sessions.length === 0
-              ? "No sessions recorded yet. Finish a focus session today and your first coconut appears."
-              : streakMessage(stats)}
-          </p>
+    <div className="flex flex-col gap-8">
+      <Card className="relative overflow-hidden">
+        <div className="flex flex-col items-center gap-4 p-6 md:flex-row md:items-center md:justify-between md:gap-8 md:px-8 md:py-7">
+          <div className="text-center md:text-left">
+            <h2 className="font-display text-2xl font-medium text-forest md:text-3xl">Your coconut grove</h2>
+            <p className="mt-1.5 max-w-md text-sm leading-relaxed text-ink-soft">
+              {sessions.length === 0
+                ? "No sessions recorded yet. Finish a focus session today and your first coconut appears."
+                : streakMessage(stats)}
+            </p>
+          </div>
+          <PalmTree coconuts={stats.currentStreak} growing={growing} className="h-48 shrink-0" />
         </div>
-        <PalmTree coconuts={stats.currentStreak} growing={growing} className="h-44" />
       </Card>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-x-6 gap-y-5 md:grid-cols-4">
         <GardenStat label="Current streak" value={`${stats.currentStreak}`} suffix={stats.currentStreak === 1 ? "day" : "days"} />
         <GardenStat label="Longest streak" value={`${stats.longestStreak}`} suffix={stats.longestStreak === 1 ? "day" : "days"} />
         <GardenStat label="Productive days" value={`${stats.productiveDays}`} suffix="total" />
-        <div className="rounded-2xl border border-line bg-surface px-4 py-3 shadow-card">
-          <p className="text-xs font-medium text-ink-soft">Today&apos;s goal</p>
-          <p className="mt-1 text-sm font-semibold text-forest">
-            {Math.min(settings.dailyGoalMinutes, Math.round(stats.todayActiveMs / 60_000))} / {settings.dailyGoalMinutes} min
+        <div className="border-t border-line pt-3">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-soft">Today&apos;s goal</p>
+          <p className="font-display mt-1.5 text-3xl font-medium text-forest">
+            {Math.min(settings.dailyGoalMinutes, Math.round(stats.todayActiveMs / 60_000))}
+            <span className="text-sm font-normal text-ink-soft"> / {settings.dailyGoalMinutes} min</span>
           </p>
-          <div className="mt-2">
+          <div className="mt-2.5">
             <ProgressBar fraction={todayFraction} label="Today's focus goal progress" showPercent={false} />
           </div>
         </div>
@@ -148,7 +151,7 @@ export function GardenView() {
         <Card>
           <CardHeader title="Daily history" subtitle="Green = goal reached · red outline cross = missed · dashed = still open" />
           <div className="p-5">
-            <div className="h-56 animate-pulse rounded-2xl bg-brown-wash" aria-label="Loading your month" />
+            <div className="h-56 animate-pulse rounded-lg bg-brown-wash" aria-label="Loading your month" />
           </div>
         </Card>
       )}
@@ -179,10 +182,10 @@ export function GardenView() {
 
 function GardenStat({ label, value, suffix }: { label: string; value: string; suffix?: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface px-4 py-3 shadow-card">
-      <p className="text-xs font-medium text-ink-soft">{label}</p>
-      <p className="mt-1 flex items-baseline gap-1 text-2xl font-semibold text-forest">
-        <ClientOnly fallback={<span className="text-2xl">–</span>}>{value}</ClientOnly>
+    <div className="border-t border-line pt-3">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.09em] text-ink-soft">{label}</p>
+      <p className="font-display mt-1.5 flex items-baseline gap-1 text-3xl font-medium text-forest">
+        <ClientOnly fallback={<span>–</span>}>{value}</ClientOnly>
         {suffix ? <span className="text-xs font-medium text-ink-soft">{suffix}</span> : null}
       </p>
     </div>
@@ -201,7 +204,7 @@ function Button({ onClick, disabled, children, ariaLabel }: {
       onClick={onClick}
       disabled={disabled}
       aria-label={ariaLabel}
-      className="rounded-lg border border-line bg-surface p-1.5 text-forest hover:bg-brown-wash disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-palm"
+      className="rounded-md border border-line bg-surface p-1.5 text-forest hover:bg-brown-wash disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest"
     >
       {children}
     </button>

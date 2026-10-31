@@ -114,6 +114,16 @@ Deployment has **not** been performed for this project — the steps above are t
 
 **Cloud features (require Supabase setup):** email/password + magic-link auth, automatic one-time import of guest data into the account (idempotent — no duplicates), cross-device sync, real study groups with live presence, per-member and group focus totals, shared synchronized sessions, join-by-code with server-side validation, and a hard 12-member cap enforced by a database trigger.
 
+## Design language (editorial botanical)
+
+The interface follows an "editorial botanical" direction — more quiet study journal than app dashboard:
+
+- **Type:** Fraunces (display serif) for headings and big numerals (`--font-display`, `font-display` utility); Geist for body text; `eyebrow` utility for small spaced-uppercase labels.
+- **Palette:** one set of tokens in `src/app/globals.css` (`--color-*`) — warm ivory paper (`cream`/`surface`), deep forest ink (`forest`/`palm`), sage (`palm-wash`), earth (`brown`, `terracotta`, `gold`), and hairline rules (`line`).
+- **Space:** one dark forest panel per page at most (dashboard focus entry); indicators are hairline-ruled typographic bands instead of boxed stat cards; cards use thin borders and soft shadows with a 12-column working canvas (`max-w-6xl`).
+- **Botanical art:** all coconut/palm/sprig illustration is inline SVG in `src/components/palm/PalmArt.tsx` — no image assets, status colors map to the same tokens.
+- **Motion:** only the small `rise`/`fade` transitions defined in globals.css; everything is disabled under `prefers-reduced-motion`.
+
 ### Data rules (the honest-math guarantees)
 
 - A **qualifying day** = at least 25 focused minutes (or your configured daily goal, minimum 25), measured as *unpaused, completed focus time*.

@@ -22,12 +22,12 @@ export function LocalGroupRoom({ groupId }: { groupId: string }) {
       <Card>
         <CardHeader title={group.name} subtitle="Local demo room" action={<Badge tone="brown">local only</Badge>} />
         <div className="flex flex-col gap-4 p-5">
-          <div className="flex flex-wrap items-center gap-3 rounded-xl bg-cream px-4 py-3">
+          <div className="flex flex-wrap items-center gap-3 rounded-md bg-cream px-4 py-3">
             <span className="text-xs font-medium text-ink-soft">Join code</span>
             <span className="tnum font-mono text-lg font-semibold tracking-widest text-forest">{group.joinCode}</span>
           </div>
           <ul className="flex flex-col gap-2">
-            <li className="flex items-center justify-between rounded-xl border border-line bg-surface px-4 py-3">
+            <li className="flex items-center justify-between rounded-md border border-line bg-surface px-4 py-3">
               <span className="text-sm font-medium text-forest">You</span>
               <Badge tone="palm">leader</Badge>
             </li>
@@ -203,7 +203,7 @@ export function CloudGroupRoom({ groupId, userId, onNotFound }: { groupId: strin
     onNotFound?.();
   return <NotFound />;
   }
-  if (loadError) return <p role="alert" className="rounded-xl bg-miss-wash p-4 text-sm font-medium text-miss">{loadError}</p>;
+  if (loadError) return <p role="alert" className="rounded-md bg-miss-wash p-4 text-sm font-medium text-miss">{loadError}</p>;
   if (!meta || !roster) return <Spinner label="Opening room" />;
 
   const isOwner = meta.ownerId === userId;
@@ -225,7 +225,7 @@ export function CloudGroupRoom({ groupId, userId, onNotFound }: { groupId: strin
           <SharedSessionPanel shared={shared} onStart={startSharedSession} busy={startBusy} />
 
           <div className="grid gap-4 md:grid-cols-[1fr_auto]">
-            <div className="rounded-xl bg-cream px-4 py-3">
+            <div className="rounded-md bg-cream px-4 py-3">
               <p className="text-xs font-medium text-ink-soft">Group focus today</p>
               <p className="text-2xl font-semibold text-forest">
                 <SessionTotal ms={groupTodayMs} />
@@ -262,7 +262,7 @@ export function CloudGroupRoom({ groupId, userId, onNotFound }: { groupId: strin
                         ? "in the room"
                         : "offline";
                 return (
-                  <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-line bg-surface px-4 py-3">
+                  <li key={m.user_id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-line bg-surface px-4 py-3">
                     <span className="text-sm font-medium text-forest">
                       {m.display_name || shortenId(m.user_id)}
                       {m.user_id === userId ? " (you)" : ""}
@@ -303,10 +303,10 @@ function SharedSessionPanel({ shared, onStart, busy }: {
     const done = remaining === 0;
     // Display time is always computed from the shared start timestamp — never a local independent countdown.
     return (
-      <div className="rounded-xl border border-line bg-palm-wash p-4 text-center">
+      <div className="rounded-md border border-line bg-palm-wash p-4 text-center">
         <p className="text-xs font-medium text-ink-soft">Shared session {done ? "complete — start another?" : "in progress"}</p>
-        <p className="tnum mt-1 text-4xl font-semibold text-forest">
-          {done ? "☕" : formatClock(remaining)}
+        <p className="tnum mt-1 font-display text-4xl font-medium text-forest">
+          {done ? "Complete" : formatClock(remaining)}
         </p>
         {!done ? <p className="text-xs text-ink-soft">synchronized from the shared start time</p> : null}
         <Button size="sm" variant="secondary" className="mt-3" loading={busy} onClick={() => onStart(25)}>
@@ -316,7 +316,7 @@ function SharedSessionPanel({ shared, onStart, busy }: {
     );
   }
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-dashed border-line bg-cream/60 p-4">
+    <div className="flex items-center justify-between gap-4 rounded-md border border-dashed border-line bg-cream/60 p-4">
       <div>
         <p className="text-sm font-medium text-forest">No shared session running</p>
         <p className="text-xs text-ink-soft">Everyone sees the same countdown — time is measured from one shared start stamp.</p>

@@ -50,14 +50,14 @@ function TaskRow({ task, onEdit, onDelete, today }: {
     mirrorUpsertTask(updated);
   }
   return (
-    <li className="flex items-start gap-3 rounded-xl border border-line bg-surface px-4 py-3 transition-colors hover:bg-brown-wash/40">
+    <li className="flex items-start gap-3 rounded-md border border-line/80 bg-surface px-4 py-3 transition-colors hover:border-brown/40 hover:bg-brown-wash/40">
       <button
         role="checkbox"
         aria-checked={task.completed}
         aria-label={task.completed ? `Mark ${task.title} as incomplete` : `Mark ${task.title} as complete`}
         onClick={toggleComplete}
-        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-palm ${
-          task.completed ? "border-palm bg-palm text-cream" : "border-line bg-cream hover:border-palm"
+        className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-forest ${
+          task.completed ? "border-forest bg-forest text-cream" : "border-line bg-cream hover:border-forest"
         }`}
       >
         {task.completed ? <Check size={14} aria-hidden /> : null}
@@ -164,19 +164,20 @@ export function TaskPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="p-5">
+      <Card className="p-5 md:p-6">
         <form onSubmit={addTask} className="flex flex-col gap-4" aria-label="Add a task">
-          <Field label="New task" htmlFor="task-title" error={addError ?? undefined}>
-            <TextInput
-              id="task-title"
-              placeholder="e.g. Revise integration formulas"
-              value={title}
-              maxLength={120}
-              onChange={(e) => setTitle(e.target.value)}
-              aria-describedby={addError ? "task-title-error" : undefined}
-            />
-          </Field>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <p className="eyebrow text-brown">New task</p>
+          <div className="grid gap-3 md:grid-cols-[1fr_10rem_11rem_auto] md:items-end">
+            <Field label="Task" htmlFor="task-title" error={addError ?? undefined}>
+              <TextInput
+                id="task-title"
+                placeholder="e.g. Revise integration formulas"
+                value={title}
+                maxLength={120}
+                onChange={(e) => setTitle(e.target.value)}
+                aria-describedby={addError ? "task-title-error" : undefined}
+              />
+            </Field>
             <Field label="Priority" htmlFor="task-priority">
               <Select id="task-priority" value={priority} onChange={(e) => setPriority(e.target.value as Priority)}>
                 <option value="high">High</option>
@@ -187,11 +188,9 @@ export function TaskPage() {
             <Field label="Due date (optional)" htmlFor="task-due">
               <TextInput id="task-due" type="date" value={dueDate} min="2000-01-01" onChange={(e) => setDueDate(e.target.value)} />
             </Field>
-            <div className="col-span-2 flex items-end">
-              <Button type="submit" loading={adding} className="w-full md:w-auto">
-                <Plus size={16} aria-hidden /> Add task
-              </Button>
-            </div>
+            <Button type="submit" loading={adding}>
+              <Plus size={16} aria-hidden /> Add task
+            </Button>
           </div>
         </form>
       </Card>
@@ -213,14 +212,16 @@ export function TaskPage() {
             </div>
           }
         />
-        <div className="flex flex-wrap gap-2 border-b border-line px-5 py-3">
+        <div className="flex flex-wrap items-center gap-5 border-b border-line px-5">
           {(["active", "overdue", "completed", "all"] as TaskFilter[]).map((f) => (
             <button
               key={f}
               onClick={() => setFilter(f)}
               aria-pressed={filter === f}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium capitalize transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-palm ${
-                filter === f ? "bg-palm text-cream" : "bg-cream text-ink-soft hover:text-forest"
+              className={`-mb-px border-b-2 pb-2.5 pt-2.5 text-sm capitalize transition-colors focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-forest ${
+                filter === f
+                  ? "border-forest font-medium text-forest"
+                  : "border-transparent text-ink-soft hover:border-brown/45 hover:text-forest"
               }`}
             >
               {f}
@@ -300,7 +301,7 @@ function EditDialog({ task, onClose, onSave }: {
             maxLength={500}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="rounded-xl border border-line bg-surface px-3 py-2 text-sm text-ink focus:border-palm focus:outline-2 focus:outline-offset-1 focus:outline-palm"
+            className="rounded-md border border-line bg-surface px-3 py-2 text-sm text-ink placeholder:text-ink-soft/50 focus:border-forest focus:outline-2 focus:outline-offset-1 focus:outline-forest/25"
             placeholder="Anything you want to remember about this task"
           />
         </Field>

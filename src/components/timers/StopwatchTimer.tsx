@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pause, Play, Save, RotateCcw, Square } from "lucide-react";
-import { Badge, Button, Card, ClientOnly, Dialog, Field, Select } from "@/components/ui/primitives";
+import { Button, Card, ClientOnly, Dialog, Field, Select } from "@/components/ui/primitives";
 import { TodayFocusSummary } from "@/components/timers/TodayFocusSummary";
-import { PalmTree } from "@/components/palm/PalmArt";
+import { PalmTree, Sprig } from "@/components/palm/PalmArt";
 import { guestStore, useSettings, useTasks, useTimerSnapshots } from "@/lib/store";
 import * as engine from "@/lib/timers/engine";
 import { recordSession } from "@/lib/session-record";
@@ -73,29 +73,45 @@ export function StopwatchTimer() {
     setSnap(engine.IDLE);
   }
 
+  /* Space toggles start/pause — guarded so typing anywhere never fires it. */
+  const spaceAction = useRef<() => void>(() => {});
+  useEffect(() => {
+    spaceAction.current = () => {
+      if (snap.status === "idle" || running || snap.status === "paused") control();
+    };
+  });
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.code !== "Space" || e.repeat) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.tagName === "BUTTON" || t.isContentEditable)) return;
+      e.preventDefault();
+      spaceAction.current();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   const activeTasks = sortTasks(tasks.filter((t) => !t.completed));
 
   return (
     <div className="flex flex-col gap-6">
-      <Card className="p-6 md:p-8">
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
-          <Badge tone={running ? "palm" : snap.status === "paused" ? "brown" : "neutral"}>
-            {running ? "Studying" : snap.status === "paused" ? "On break (paused)" : "Ready"}
-          </Badge>
-          {snap.status === "paused" ? (
-            <span className="text-xs text-ink-soft">Paused time is not counted.</span>
-          ) : null}
+      <Card className="relative overflow-hidden p-6 md:p-9">
+        <Sprig className="pointer-events-none absolute -right-2 -top-2 h-28 w-28 rotate-12 opacity-40" />
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="eyebrow text-brown">{running ? "Counting · open study" : snap.status === "paused" ? "Paused" : "Stopwatch"}</p>
+          {snap.status === "paused" ? <span className="text-xs text-ink-soft">Paused time is not counted.</span> : null}
         </div>
 
-        <ClientOnly fallback={<div className="mx-auto my-4 h-20 w-full max-w-md animate-pulse rounded-2xl bg-brown-wash" />}>
-          <p className="tnum mx-auto max-w-md text-center text-4xl font-semibold text-forest md:text-6xl" aria-live="off">
+        <ClientOnly fallback={<div className="mx-auto my-6 h-20 w-full max-w-md animate-pulse rounded-lg bg-brown-wash" />}>
+          <p className="tnum font-display mx-auto max-w-md text-center text-6xl font-medium text-forest md:text-7xl" aria-live="off">
             {engine.formatStopwatch(elapsed)}
           </p>
-          <p className="mt-2 text-center text-sm text-ink-soft">
+          <p className="mt-3 text-center text-sm text-ink-soft">
             {savedMsg ?? "Active study time, accurate across tab throttling — hours supported."}
           </p>
 
-          <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+          <div className="mt-7 flex flex-wrap items-center justify-center gap-2.5">
             {snap.status === "idle" ? (
               <Button size="lg" onClick={control}>
                 <Play size={18} aria-hidden /> Start stopwatch
@@ -121,6 +137,10 @@ export function StopwatchTimer() {
               </>
             ) : null}
           </div>
+
+          <p className="mt-4 text-center text-xs text-ink-soft/80">
+            Space starts or pauses · only “Finish &amp; save” records time
+          </p>
         </ClientOnly>
       </Card>
 
@@ -136,7 +156,7 @@ export function StopwatchTimer() {
               ))}
             </Select>
           </Field>
-          <p className="mt-2 text-xs text-ink-soft">
+          <p className="mt-2 text-xs leading-relaxed text-ink-soft">
             Elapsed time comes from timestamps, so background-tab throttling and refreshes can&apos;t lose time. Only
             &quot;Finish &amp; save&quot; records a session; Reset throws the block away (with confirmation).
           </p>
@@ -146,7 +166,9 @@ export function StopwatchTimer() {
         </div>
       </Card>
 
-      <TodayFocusSummary tz={settings.timezone} />
+      <Card className="px-5 pb-4 pt-3">
+        <TodayFocusSummary tz={settings.timezone} />
+      </Card>
 
       <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} title="Reset the stopwatch?">
         <p className="text-sm text-ink-soft">
